@@ -65,3 +65,18 @@ powershell -ExecutionPolicy Bypass -File restore.ps1
 ```bash
 pip install file-size-splitter
 ```
+
+## ライブラリとしての使用
+
+Pythonスクリプト内からライブラリとして使用することもできます。
+
+```python
+from file_size_splitter import split_file, generate_bat_script, generate_ps1_script
+
+# ファイルを分割
+metadata = split_file("largefile.zip", "10M", "output")
+
+# 復元スクリプトを生成
+generate_bat_script(metadata, "output/restore.bat")
+generate_ps1_script(metadata, "output/restore.ps1")
+```

@@ -115,3 +115,15 @@ def test_generate_ps1_script(tmp_path):
     assert "test.txt.001" in ps1_content
     assert "test.txt.002" in ps1_content
     assert "Get-Content" in ps1_content
+
+
+def test_library_import():
+    """ライブラリとしてのimportをテスト"""
+    # __init__.pyから主要な関数をimportできることを確認
+    from file_size_splitter import parse_size, split_file, generate_bat_script, generate_ps1_script
+    
+    # 関数が正しくimportされていることを確認
+    assert callable(parse_size)
+    assert callable(split_file)
+    assert callable(generate_bat_script)
+    assert callable(generate_ps1_script)
