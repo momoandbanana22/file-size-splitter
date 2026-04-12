@@ -2,7 +2,7 @@
 
 import json
 from pathlib import Path
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 
 def parse_size(size_str: str) -> int:
@@ -44,7 +44,7 @@ def parse_size(size_str: str) -> int:
         raise ValueError(f"無効なサイズ指定: {size_str}")
 
 
-def split_file(input_file: str, size_str: str, output_dir: str = None) -> Dict[str, Any]:
+def split_file(input_file: str, size_str: str, output_dir: Optional[str] = None) -> Dict[str, Any]:
     """ファイルを指定されたサイズで分割する
     
     Args:

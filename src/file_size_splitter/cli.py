@@ -31,7 +31,7 @@ def main() -> int:
         # ファイルを分割
         metadata = split_file(args.input_file, args.size, args.output)
         
-        # 出力ディレクトリの決定
+        # 出力ディレクトリの決定（split_file関数内で決定済み）
         if args.output:
             output_dir = Path(args.output)
         else:

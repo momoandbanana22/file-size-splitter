@@ -53,12 +53,3 @@ powershell -ExecutionPolicy Bypass -File restore.ps1
 ```bash
 pip install file-size-splitter
 ```
-
-## 開発状況
-
-- [x] ファイル分割機能の実装
-- [x] BATファイル生成機能の実装
-- [x] PS1ファイル生成機能の実装
-- [x] テストの作成
-- [x] CLIの実装
-- [x] PyPI公開
