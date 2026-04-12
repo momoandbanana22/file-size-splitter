@@ -61,4 +61,4 @@ pip install file-size-splitter
 - [x] PS1ファイル生成機能の実装
 - [x] テストの作成
 - [x] CLIの実装
-- [ ] PyPI公開
+- [x] PyPI公開

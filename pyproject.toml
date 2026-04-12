@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "file-size-splitter"
-version = "0.1.0"
+version = "0.1.1"
 description = "ファイルを指定されたサイズで分割し、分割したファイルを復元するツール"
 readme = "README.md"
 requires-python = ">=3.8"
