@@ -60,7 +60,7 @@ def test_split_file(tmp_path):
 
 
 def test_generate_bat_script(tmp_path):
-    """BATファイル生成機能"""
+    """BATファイル生成テスト"""
     from file_size_splitter.splitter import generate_bat_script
     
     metadata = {
@@ -83,9 +83,7 @@ def test_generate_bat_script(tmp_path):
     # BATファイルの内容を確認
     bat_content = bat_path.read_text(encoding="shift-jis")
     assert "@echo off" in bat_content
-    assert "test.txt.001" in bat_content
-    assert "test.txt.002" in bat_content
-    assert "copy" in bat_content
+    assert "restore.ps1" in bat_content
 
 
 def test_generate_ps1_script(tmp_path):
@@ -226,8 +224,8 @@ def test_generate_bat_script_with_hash_verification(tmp_path):
     # BATファイルの内容を確認
     bat_content = bat_path.read_text(encoding="shift-jis")
     
-    # ハッシュ検証コマンドが含まれていることを確認
-    assert "sha512" in bat_content.lower() or "hash" in bat_content.lower()
+    # BATファイルがrestore.ps1を起動することを確認
+    assert "restore.ps1" in bat_content
 
 
 def test_generate_ps1_script_with_hash_verification(tmp_path):

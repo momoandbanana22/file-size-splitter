@@ -162,39 +162,18 @@ def generate_bat_script(metadata: Dict[str, Any], output_path: str) -> None:
         output_path: 出力ファイルパス
     """
     original_file = metadata["original_file"]
-    original_sha512 = metadata.get("original_sha512", "")
-    parts = metadata["parts"]
     
-    # BATファイルの内容を生成
+    # BATファイルの内容を生成（PS1スクリプトを起動するだけ）
     lines = [
         "@echo off",
         "chcp 65001 > nul",
         f"echo 復元中: {original_file}",
         "",
+        "powershell -ExecutionPolicy Bypass -File restore.ps1",
+        "",
+        f"echo 復元完了: {original_file}",
+        "pause",
     ]
-    
-    # 各分割ファイルのsha512ハッシュ検証
-    for part in parts:
-        filename = part["filename"]
-        expected_sha512 = part.get("sha512", "")
-        if expected_sha512:
-            lines.append(f"echo 検証中: {filename}")
-            lines.append(f"powershell -Command \"$hash = (Get-FileHash -Path '{filename}' -Algorithm SHA512).Hash.ToString(); if ($hash -ne '{expected_sha512}') {{ Write-Host 'エラー: {filename} のハッシュが一致しません'; exit 1 }}; Write-Host 'OK: {filename}'\"")
-            lines.append("")
-    
-    # copyコマンドでファイルを結合
-    part_files = " + ".join([f'"{p["filename"]}"' for p in parts])
-    lines.append(f"copy /B {part_files} \"{original_file}\"")
-    lines.append("")
-    
-    # 復元ファイルのsha512ハッシュ検証
-    if original_sha512:
-        lines.append(f"echo 検証中: {original_file}")
-        lines.append(f"powershell -Command \"$hash = (Get-FileHash -Path '{original_file}' -Algorithm SHA512).Hash.ToString(); if ($hash -ne '{original_sha512}') {{ Write-Host 'エラー: {original_file} のハッシュが一致しません'; exit 1 }}; Write-Host 'OK: {original_file}'\"")
-        lines.append("")
-    
-    lines.append(f"echo 復元完了: {original_file}")
-    lines.append("pause")
     
     # BATファイルを書き込み
     bat_content = "\r\n".join(lines)
