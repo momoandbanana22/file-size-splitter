@@ -1,8 +1,26 @@
 """ファイル分割機能"""
 
+import hashlib
 import json
 from pathlib import Path
 from typing import Dict, Any, Optional
+
+
+def calculate_sha512(file_path: str) -> str:
+    """ファイルのsha512ハッシュを計算する
+    
+    Args:
+        file_path: ファイルパス
+    
+    Returns:
+        sha512ハッシュ値（16進数文字列）
+    """
+    sha512_hash = hashlib.sha512()
+    with open(file_path, "rb") as f:
+        # ファイルをチャンクで読み込んでハッシュ計算（メモリ効率）
+        for chunk in iter(lambda: f.read(8192), b""):
+            sha512_hash.update(chunk)
+    return sha512_hash.hexdigest()
 
 
 def parse_size(size_str: str) -> int:
@@ -73,6 +91,7 @@ def split_file(input_file: str, size_str: str, output_dir: Optional[str] = None)
     metadata: Dict[str, Any] = {
         "original_file": input_path.name,
         "original_size": input_path.stat().st_size,
+        "original_sha512": calculate_sha512(str(input_path)),
         "split_size": split_size,
         "part_count": 0,
         "parts": [],
@@ -94,15 +113,38 @@ def split_file(input_file: str, size_str: str, output_dir: Optional[str] = None)
             with open(part_path, "wb") as part_f:
                 part_f.write(chunk)
             
+            # 分割ファイルのsha512ハッシュを計算
+            part_sha512 = calculate_sha512(str(part_path))
+            
             # メタデータに追加
             metadata["parts"].append({
                 "filename": part_filename,
                 "size": len(chunk),
+                "sha512": part_sha512,
             })
             
             part_number += 1
     
     metadata["part_count"] = part_number - 1
+    
+    # 全ての分割ファイルの作成後に復元確認を行う
+    # 分割ファイルを結合して復元
+    restored_path = output_path / f"{input_path.name}.restored.tmp"
+    with open(restored_path, "wb") as f:
+        for p in metadata["parts"]:
+            p_path = output_path / p["filename"]
+            with open(p_path, "rb") as p_f:
+                f.write(p_f.read())
+    
+    # 復元ファイルのsha512ハッシュを計算
+    restored_sha512 = calculate_sha512(str(restored_path))
+    
+    # オリジナルファイルのsha512ハッシュと一致することを確認
+    if restored_sha512 != metadata["original_sha512"]:
+        raise ValueError(f"復元確認に失敗しました: sha512ハッシュが一致しません")
+    
+    # 復元ファイルを削除
+    restored_path.unlink()
     
     # メタデータファイルを保存
     metadata_path = output_path / f"{input_path.name}.metadata.json"
@@ -120,6 +162,7 @@ def generate_bat_script(metadata: Dict[str, Any], output_path: str) -> None:
         output_path: 出力ファイルパス
     """
     original_file = metadata["original_file"]
+    original_sha512 = metadata.get("original_sha512", "")
     parts = metadata["parts"]
     
     # BATファイルの内容を生成
@@ -130,10 +173,26 @@ def generate_bat_script(metadata: Dict[str, Any], output_path: str) -> None:
         "",
     ]
     
+    # 各分割ファイルのsha512ハッシュ検証
+    for part in parts:
+        filename = part["filename"]
+        expected_sha512 = part.get("sha512", "")
+        if expected_sha512:
+            lines.append(f"echo 検証中: {filename}")
+            lines.append(f"powershell -Command \"$hash = (Get-FileHash -Path '{filename}' -Algorithm SHA512).Hash.ToString(); if ($hash -ne '{expected_sha512}') {{ Write-Host 'エラー: {filename} のハッシュが一致しません'; exit 1 }}; Write-Host 'OK: {filename}'\"")
+            lines.append("")
+    
     # copyコマンドでファイルを結合
     part_files = " + ".join([f'"{p["filename"]}"' for p in parts])
     lines.append(f"copy /B {part_files} \"{original_file}\"")
     lines.append("")
+    
+    # 復元ファイルのsha512ハッシュ検証
+    if original_sha512:
+        lines.append(f"echo 検証中: {original_file}")
+        lines.append(f"powershell -Command \"$hash = (Get-FileHash -Path '{original_file}' -Algorithm SHA512).Hash.ToString(); if ($hash -ne '{original_sha512}') {{ Write-Host 'エラー: {original_file} のハッシュが一致しません'; exit 1 }}; Write-Host 'OK: {original_file}'\"")
+        lines.append("")
+    
     lines.append(f"echo 復元完了: {original_file}")
     lines.append("pause")
     
@@ -151,6 +210,7 @@ def generate_ps1_script(metadata: Dict[str, Any], output_path: str) -> None:
         output_path: 出力ファイルパス
     """
     original_file = metadata["original_file"]
+    original_sha512 = metadata.get("original_sha512", "")
     parts = metadata["parts"]
     
     # PS1ファイルの内容を生成
@@ -160,6 +220,17 @@ def generate_ps1_script(metadata: Dict[str, Any], output_path: str) -> None:
         "",
     ]
     
+    # 各分割ファイルのsha512ハッシュ検証
+    for part in parts:
+        filename = part["filename"]
+        expected_sha512 = part.get("sha512", "")
+        if expected_sha512:
+            lines.append(f"Write-Host '検証中: {filename}'")
+            lines.append(f"$hash = (Get-FileHash -Path '{filename}' -Algorithm SHA512).Hash.ToString()")
+            lines.append(f"if ($hash -ne '{expected_sha512}') {{ Write-Host 'エラー: {filename} のハッシュが一致しません'; exit 1 }}")
+            lines.append(f"Write-Host 'OK: {filename}'")
+            lines.append("")
+    
     # Get-ContentとSet-Contentでファイルを結合
     part_files = [f'"{p["filename"]}"' for p in parts]
     lines.append(f"$parts = {', '.join(part_files)}")
@@ -167,6 +238,15 @@ def generate_ps1_script(metadata: Dict[str, Any], output_path: str) -> None:
     lines.append("")
     lines.append("$parts | ForEach-Object { Get-Content -Path $_ -Raw } | Set-Content -Path $output")
     lines.append("")
+    
+    # 復元ファイルのsha512ハッシュ検証
+    if original_sha512:
+        lines.append(f"Write-Host '検証中: {original_file}'")
+        lines.append(f"$hash = (Get-FileHash -Path '{original_file}' -Algorithm SHA512).Hash.ToString()")
+        lines.append(f"if ($hash -ne '{original_sha512}') {{ Write-Host 'エラー: {original_file} のハッシュが一致しません'; exit 1 }}")
+        lines.append(f"Write-Host 'OK: {original_file}'")
+        lines.append("")
+    
     lines.append(f"Write-Host '復元完了: {original_file}'")
     lines.append("Read-Host 'Enterキーを押してください'")
     
