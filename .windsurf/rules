@@ -81,7 +81,7 @@ pytest
 - タグ `v*` がプッシュされると自動的にPyPIに公開される
 
 ### 公開手順
-1. `pyproject.toml` のバージョンを更新
+1. `src/file_size_splitter/__init__.py` の `__version__` を更新
 2. 変更をコミット
 3. mainブランチをプッシュしてリモートリポジトリの状態を確定
 4. タグを作成してプッシュ：

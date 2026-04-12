@@ -2,6 +2,14 @@
 
 ファイルを指定されたサイズで分割し、分割したファイルを復元するツール。
 
+## ライセンス
+
+MIT License
+
+## リポジトリ
+
+https://github.com/momoandbanana22/file-size-splitter
+
 ## 仕様
 
 ### 機能1: ファイル分割
