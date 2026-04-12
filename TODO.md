@@ -40,3 +40,5 @@
     - BAT/PS1スクリプトでハッシュ検証を実装（PowerShellのGet-FileHashコマンドを使用）
   - metadata.jsonにsha512ハッシュ情報を追加（original_sha512、各partのsha512）
 - requirements.txtの作成
+- README.mdの更新（インストール方法とライブラリ使用方法の整合性改善）
+- BATファイルの簡素化（PS1スクリプトを起動するだけに変更）
