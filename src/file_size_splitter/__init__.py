@@ -2,5 +2,5 @@
 
 from .splitter import parse_size, split_file, generate_bat_script, generate_ps1_script
 
-__version__ = "0.1.5"
+__version__ = "0.1.6"
 __all__ = ["parse_size", "split_file", "generate_bat_script", "generate_ps1_script"]
