@@ -38,7 +38,7 @@ file-size-splitter largefile.zip 10485760
 ```
 
 ### ファイル復元
-分割時に生成された `restore.bat` または `restore.ps1` を実行します。
+分割されたファイル（*.001, *.002, ...）とメタデータファイル（*.metadata.json）を同じディレクトリに配置し、生成された `restore.bat` または `restore.ps1` を実行します。
 
 ```bash
 # BATファイルを使用（Windows）
