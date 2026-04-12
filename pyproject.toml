@@ -10,14 +10,13 @@ readme = "README.md"
 requires-python = ">=3.8"
 license = {text = "MIT"}
 authors = [
-    {name = "Your Name"}
+    {name = "momoandbanana22"}
 ]
 keywords = ["file", "split", "restore", "batch", "powershell"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
     "Intended Audience :: System Administrators",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.8",
@@ -33,9 +32,9 @@ classifiers = [
 file-size-splitter = "file_size_splitter.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/yourusername/file-size-splitter"
-Repository = "https://github.com/yourusername/file-size-splitter"
-Issues = "https://github.com/yourusername/file-size-splitter/issues"
+Homepage = "https://github.com/momoandbanana22/file-size-splitter"
+Repository = "https://github.com/momoandbanana22/file-size-splitter"
+Issues = "https://github.com/momoandbanana22/file-size-splitter/issues"
 
 [tool.setuptools.packages.find]
 where = ["src"]
