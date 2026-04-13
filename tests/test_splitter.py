@@ -112,7 +112,7 @@ def test_generate_ps1_script(tmp_path):
     assert "Write-Host" in ps1_content
     assert "test.txt.001" in ps1_content
     assert "test.txt.002" in ps1_content
-    assert "Get-Content" in ps1_content
+    assert "System.IO.File" in ps1_content
 
 
 def test_library_import():
@@ -254,3 +254,92 @@ def test_generate_ps1_script_with_hash_verification(tmp_path):
     
     # ハッシュ検証コマンドが含まれていることを確認
     assert "sha512" in ps1_content.lower() or "hash" in ps1_content.lower()
+
+
+import sys
+import zipfile
+import subprocess
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows環境でのみ実行")
+def test_split_file_with_binary_file(tmp_path):
+    """バイナリファイル（ZIP）での分割・復元テスト"""
+    from file_size_splitter import split_file, calculate_sha512
+    
+    # テスト用のZIPファイルを作成
+    zip_file = tmp_path / "test.zip"
+    with zipfile.ZipFile(zip_file, "w") as zf:
+        zf.writestr("test.txt", "Hello, World! This is a test file inside ZIP.")
+    
+    # オリジナルファイルのsha512ハッシュを計算
+    original_sha512 = calculate_sha512(str(zip_file))
+    
+    # ファイルを分割
+    metadata = split_file(str(zip_file), "100")
+    
+    # 復元ファイルのパス
+    restored_file = tmp_path / "restored_test.zip"
+    
+    # 分割ファイルを結合して復元
+    with open(restored_file, "wb") as f:
+        for part in metadata["parts"]:
+            part_path = tmp_path / part["filename"]
+            with open(part_path, "rb") as part_f:
+                f.write(part_f.read())
+    
+    # 復元ファイルのsha512ハッシュを計算
+    restored_sha512 = calculate_sha512(str(restored_file))
+    
+    # オリジナルファイルのsha512ハッシュと一致することを確認
+    assert restored_sha512 == original_sha512
+    
+    # オリジナルファイルと復元ファイルの内容が一致することを確認
+    assert restored_file.read_bytes() == zip_file.read_bytes()
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows環境でのみ実行")
+def test_ps1_script_execution(tmp_path):
+    """生成されたPS1スクリプトを実際に実行して復元を検証するテスト"""
+    from file_size_splitter import split_file, calculate_sha512, generate_ps1_script
+    
+    # テスト用のZIPファイルを作成
+    zip_file = tmp_path / "test.zip"
+    with zipfile.ZipFile(zip_file, "w") as zf:
+        zf.writestr("test.txt", "Hello, World! This is a test file inside ZIP.")
+    
+    # オリジナルファイルのsha512ハッシュを計算
+    original_sha512 = calculate_sha512(str(zip_file))
+    
+    # ファイルを分割
+    metadata = split_file(str(zip_file), "100")
+    
+    # PS1スクリプトを生成
+    ps1_path = tmp_path / "restore.ps1"
+    generate_ps1_script(metadata, str(ps1_path))
+    
+    # PS1スクリプトを実行（Read-Hostコマンドを削除して自動実行）
+    ps1_content = ps1_path.read_text(encoding="utf-8")
+    ps1_content = ps1_content.replace("Read-Host 'Enterキーを押してください'", "")
+    ps1_path.write_text(ps1_content, encoding="utf-8")
+    
+    # PowerShellでスクリプトを実行
+    result = subprocess.run(
+        ["powershell", "-ExecutionPolicy", "Bypass", "-File", str(ps1_path)],
+        cwd=str(tmp_path),
+        capture_output=True,
+        text=True,
+        timeout=30
+    )
+    
+    # 実行が成功したことを確認
+    assert result.returncode == 0, f"PowerShellスクリプト実行失敗: {result.stderr}"
+    
+    # 復元されたファイルを確認
+    restored_file = tmp_path / "test.zip"
+    assert restored_file.exists()
+    
+    # 復元ファイルのsha512ハッシュを計算
+    restored_sha512 = calculate_sha512(str(restored_file))
+    
+    # オリジナルファイルのsha512ハッシュと一致することを確認
+    assert restored_sha512 == original_sha512

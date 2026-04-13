@@ -210,12 +210,17 @@ def generate_ps1_script(metadata: Dict[str, Any], output_path: str) -> None:
             lines.append(f"Write-Host 'OK: {filename}'")
             lines.append("")
     
-    # Get-ContentとSet-Contentでファイルを結合
+    # .NETのバイナリモードでファイルを結合
     part_files = [f'"{p["filename"]}"' for p in parts]
     lines.append(f"$parts = {', '.join(part_files)}")
     lines.append("$output = \"" + original_file + "\"")
     lines.append("")
-    lines.append("$parts | ForEach-Object { Get-Content -Path $_ -Raw } | Set-Content -Path $output")
+    lines.append("$stream = [System.IO.File]::OpenWrite($output)")
+    lines.append("$parts | ForEach-Object {")
+    lines.append("    $bytes = [System.IO.File]::ReadAllBytes($_)")
+    lines.append("    $stream.Write($bytes, 0, $bytes.Length)")
+    lines.append("}")
+    lines.append("$stream.Close()")
     lines.append("")
     
     # 復元ファイルのsha512ハッシュ検証
