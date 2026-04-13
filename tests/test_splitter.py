@@ -298,6 +298,37 @@ def test_split_file_with_binary_file(tmp_path):
 
 
 @pytest.mark.skipif(sys.platform != "win32", reason="Windows環境でのみ実行")
+def test_split_file_binary_data_integrity(tmp_path):
+    """分割ファイル自体のバイナリデータが正しいかの直接検証テスト"""
+    from file_size_splitter import split_file
+    
+    # テスト用のバイナリファイルを作成（ランダムなバイナリデータ）
+    import os
+    binary_file = tmp_path / "test.bin"
+    binary_data = os.urandom(500)  # 500バイトのランダムバイナリデータ
+    binary_file.write_bytes(binary_data)
+    
+    # ファイルを分割
+    metadata = split_file(str(binary_file), "100")
+    
+    # オリジナルファイルをチャンクごとに分割して、各分割ファイルのバイナリデータを直接検証
+    chunk_size = 100
+    for i, part in enumerate(metadata["parts"]):
+        part_path = tmp_path / part["filename"]
+        
+        # オリジナルデータの対応するチャンク
+        start = i * chunk_size
+        end = start + chunk_size
+        expected_chunk = binary_data[start:end]
+        
+        # 分割ファイルのバイナリデータ
+        actual_chunk = part_path.read_bytes()
+        
+        # 分割ファイルのバイナリデータが正しいことを確認
+        assert actual_chunk == expected_chunk, f"分割ファイル {part['filename']} のバイナリデータが正しくありません"
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows環境でのみ実行")
 def test_ps1_script_execution(tmp_path):
     """生成されたPS1スクリプトを実際に実行して復元を検証するテスト"""
     from file_size_splitter import split_file, calculate_sha512, generate_ps1_script
